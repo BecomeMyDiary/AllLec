@@ -32,4 +32,6 @@ export default createVuetify({
     icons: {
         iconfont: 'mdi', // default - only for display purposes
     },
+    components,
+    directives,
     });
