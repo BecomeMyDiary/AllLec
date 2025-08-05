@@ -19,7 +19,7 @@
 .nav-title {
     font-size: 1.5rem;
     font-weight: bold;
-    padding: 16px;
-    color: #1976d2; /* Vuetify primary color */
+    padding-left: 16px;
+    padding-top: 16px;
 }
 </style>
