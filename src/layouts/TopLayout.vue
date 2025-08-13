@@ -1,5 +1,5 @@
 <script setup>
-import { useTheme } from 'vuetify/lib/composables/theme';
+import { useTheme } from 'vuetify';
 import { ref } from 'vue';
 
 const theme = useTheme();
@@ -8,10 +8,11 @@ const search = ref('');
 </script>
 
 <template>
-    <v-app-bar height="80">
+    <v-app-bar location="top" flat>
         <template #title>
             <router-link
             to="/"
+            class="app-title"
             style="
                 color: inherit;
                 text-decoration: none;
@@ -50,3 +51,11 @@ const search = ref('');
         <v-btn text to="/">About</v-btn>
     </v-app-bar>
 </template>
+<style scoped> 
+.app-title { 
+    color: inherit; 
+    text-decoration: none; 
+    font-size: 2rem; 
+    font-weight: bold; 
+    } 
+</style>

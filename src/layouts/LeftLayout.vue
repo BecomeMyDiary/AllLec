@@ -1,5 +1,5 @@
 <template>
-    <v-navigation-drawer app permanent>
+    <v-navigation-drawer location="left" permanent width="260">
         <div class="nav-title">Menu</div>
         <v-list density="compact" nav>
             <v-list-item to="/" link>

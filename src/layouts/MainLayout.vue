@@ -4,11 +4,16 @@ import LeftLayout from '@/layouts/LeftLayout.vue';
 </script>
 
 <template>
-    <v-layout>
-        <TopLayout />
-        <LeftLayout />
-        <v-main>
-            <router-view />
-        </v-main>
-    </v-layout>
+    <v-app>
+        <v-layout>
+            <TopLayout />
+            <LeftLayout />
+            <v-main>
+                <router-view />
+            </v-main>
+        </v-layout>
+    </v-app>
 </template>
+<style scoped>
+:deep(.v-main__wrap) { padding: 0; }
+</style>
