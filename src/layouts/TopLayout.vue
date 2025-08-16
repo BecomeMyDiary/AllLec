@@ -8,15 +8,18 @@ const search = ref('');
 </script>
 
 <template>
-    <v-app-bar location="top" flat>
+    <v-app-bar location="top" flat height="80">
         <template #title>
             <router-link
             to="/"
             class="app-title"
             style="
-                color: inherit;
+                background: linear-gradient(to right, #FF47D6, #FF78EC, #4564FF, #57E9FF);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
                 text-decoration: none;
-                font-size: 2rem;
+                padding-left: 10px;
+                font-size: 1.9rem;
                 font-weight: bold;
                 cursor: pointer;
             "
