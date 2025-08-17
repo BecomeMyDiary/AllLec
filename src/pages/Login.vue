@@ -32,7 +32,7 @@ const login = () => {
           density="comfortable"
           color="black"
           hide-details
-          class="mb-4"
+          class="mb-4 always-underlined"
         />
         <v-text-field
           v-model="password"
@@ -42,7 +42,7 @@ const login = () => {
           density="comfortable"
           color="black"
           hide-details
-          class="mb-6"
+          class="mb-6 always-underlined"
         />
         <v-btn
           class="login-btn"
@@ -141,5 +141,12 @@ const login = () => {
   border-color: black;
   border-width: 2px;
   opacity: 1;
+}
+
+:deep(.always-underlined .v-field__outline::after) {
+  --v-field-border-width: 1px; /* กำหนดความหนาของเส้น */
+  --v-field-border-opacity: 1; /* ทำให้เส้นทึบ ไม่โปร่งใส */
+  transform: scaleX(1); /* บังคับให้เส้นแสดงเต็มความยาว */
+  border-color: black !important; /* กำหนดให้เส้นเป็นสีดำ */
 }
 </style>
