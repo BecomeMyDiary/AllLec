@@ -19,12 +19,14 @@ const login = () => {
 
     <!-- กล่อง Login -->
     <div class="login-box">
-      <h1 class="login-title" style="color: black;">Login</h1>
-      <p class="login-sub" style="color: black;">
-        Welcome back! Login to access the Sweet Marketplace.<br>
+      <h1 class="login-title">Login</h1>
+      <p class="login-sub">
+        Welcome back! Login to access the Sweet Marketplace.
+      </p>
+      <p class="login-sub" style="margin-bottom: 30px; text-align: center;">
         Did you <a href="#" class="forgot-link">forget your password?</a>
       </p>
-      <v-form>
+      <v-form >
         <v-text-field
           v-model="username"
           label="Username"
@@ -52,6 +54,7 @@ const login = () => {
         >
           CONTINUE
         </v-btn>
+        <p class="login-sub" style="margin-top: 14px; text-align: center;">Don't have an Account? <a href="#" class="forgot-link">Create account</a></p>
       </v-form>
     </div>
   </div>
@@ -68,6 +71,27 @@ const login = () => {
   justify-content: center;
 }
 
+.login-title {
+  font-size: 40px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: black; 
+  text-align: center; 
+  margin-bottom: 30px;
+}
+
+.login-title::after{
+  content: '';
+  display: block;
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(to right, #7b2ff7, #f107a3, #ff6a00);
+  margin: 5px auto;
+}
+
+.login-sub {
+  color: black;
+}
 /* จัด login กลางจอ */
 .login-center {
   position: relative;
@@ -125,6 +149,9 @@ const login = () => {
   background: linear-gradient(to right, #7b2ff7, #f107a3, #ff6a00);
   color: white;
   font-weight: bold;
+  font-size: 16px;
+  margin-top: 40px;
+  border-radius: 20px;
 }
 
 .forgot-link {
@@ -148,5 +175,14 @@ const login = () => {
   --v-field-border-opacity: 1; /* ทำให้เส้นทึบ ไม่โปร่งใส */
   transform: scaleX(1); /* บังคับให้เส้นแสดงเต็มความยาว */
   border-color: black !important; /* กำหนดให้เส้นเป็นสีดำ */
+}
+
+.login-box{
+  position: relative;
+  z-index: 1;
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 </style>
