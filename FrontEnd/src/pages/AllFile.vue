@@ -27,7 +27,6 @@ export default {
       this.selectedCourse = course;
       try {
         const res = await axios.get('http://localhost:3000/announcements', {
-
           params: { 
             email: this.email,
             courseId: course.id 
