@@ -1,0 +1,212 @@
+const express = require('express');
+const mysql = require('mysql2/promise');
+const cors = require('cors');
+const { google } = require('googleapis');
+require('dotenv').config();   // โหลดค่าจาก .env
+
+const { OAuth2Client } = require('google-auth-library');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+// ตั้งค่า OAuth2
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET,
+  process.env.REDIRECT_URI
+);
+
+
+// ใช้ CORS
+app.use(cors());
+app.use(express.json());
+
+// ใช้ createPool แทน (จัดการ connection อัตโนมัติ)
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+const KEYFILE = __dirname + '/service-account.json'; // ไฟล์ JSON ที่ได้จาก Google Cloud
+const SCOPES = [
+  'https://www.googleapis.com/auth/classroom.courses.readonly',
+  'https://www.googleapis.com/auth/classroom.rosters.readonly'
+];
+
+const key = require(KEYFILE);
+
+const auth = new google.auth.JWT(
+  key.client_email,
+  null,
+  SCOPES,
+  key.private_key
+);
+
+// ================= API =================
+
+
+// ดึงวิชาทั้งหมด
+app.get('/subjects', (req, res) => {
+  const sql = 'select s.id, s.name, s.image, f.up_date, f.descri, f.link from subject s left join files f on s.id = f.subj_id';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching subjects:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    const  subjects = {};
+    results.forEach(row => {
+      if (!subjects[row.id]) {
+        subjects[row.id] = {
+          id: row.id,
+          name: row.name,
+          image: row.image,
+          files: []
+        };
+      }
+      if(row.up_date){
+        subjects[row.id].files.push({
+          up_date: row.up_date,
+          descri: row.descri,
+          link: row.link
+        });
+      }
+    });
+    res.json(Object.values(subjects));
+  });
+});
+
+app.get('/login', (req, res) => {
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent', // ให้ refresh_token กลับมาทุกครั้ง
+    scope: [
+      'https://www.googleapis.com/auth/classroom.courses',
+      'https://www.googleapis.com/auth/classroom.rosters',
+      'https://www.googleapis.com/auth/classroom.profile.emails',
+      'https://www.googleapis.com/auth/classroom.courses.readonly',
+      'https://www.googleapis.com/auth/classroom.rosters.readonly',
+
+      // ⭐️ สำคัญสำหรับดึงข้อมูลผู้ใช้
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+      'openid'
+    ],
+  });
+  res.redirect(url);
+});
+
+app.get('/oauth2callback', async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    // แลก code เป็น token
+    const result = await oauth2Client.getToken(code);
+
+    // ตั้งค่า credentials
+    oauth2Client.setCredentials(result.tokens);
+
+    const tokens = result.tokens;
+    console.log("✅ Tokens:", tokens);
+
+    // ใช้ client ที่ auth แล้ว ดึงข้อมูล user
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const userInfo = await oauth2.userinfo.get();
+    const email = userInfo.data.email.toLowerCase();
+
+    console.log("✅ User Email:", email);
+    console.log("User Email:", email);
+    console.log("Saving tokens for:", email, tokens);
+
+    //บันทึก token ลง DB
+    await db.query(
+      `INSERT INTO user_tokens (email, access_token, refresh_token, scope, expiry_date)
+       VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          access_token=VALUES(access_token),
+          refresh_token=VALUES(refresh_token),
+          scope=VALUES(scope),
+          expiry_date=VALUES(expiry_date)`,
+      [
+        email, 
+        tokens.access_token,
+        tokens.refresh_token || null, // refresh_token อาจไม่มีมาในบางกรณี
+        tokens.scope,
+        tokens.expiry_date || null
+      ]
+    );
+
+    // TODO: save tokens + email to MySQL
+
+    res.send(`✅ Login Success! Token saved for ${email}`);
+  } catch (err) {
+    console.error("❌ Error during OAuth callback:", err);
+    res.status(500).send("Authentication failed");
+  }
+});
+
+
+
+app.get('/courses', async (req, res) => {
+  const email = req.query.email; // ดึงจาก ?email=
+  if (!email) return res.status(400).send("❌ Email is required");
+
+  const [rows] = await db.query("SELECT * FROM user_tokens WHERE email = ?", [email]);
+  if (rows.length === 0) return res.status(400).send("❌ No user tokens found, please login first");
+
+  const user = rows[0];
+  oauth2Client.setCredentials({
+    access_token: user.access_token,
+    refresh_token: user.refresh_token,
+    expiry_date: user.expiry_date
+  });
+
+  const classroom = google.classroom({ version: 'v1', auth: oauth2Client });
+  const result = await classroom.courses.list();
+
+  res.json(result.data);
+});
+
+
+app.get('/sync-courses', async (req, res) => {
+  try {
+    const classroom = google.classroom({ version: 'v1', auth });
+
+    // ดึง courses ทั้งหมด
+    const response = await classroom.courses.list();
+    const courses = response.data.courses || [];
+
+    // loop insert ลง DB
+    for (const course of courses) {
+      await db.query(
+        `INSERT INTO courses (id, name, section, description, owner_id)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+           name=VALUES(name), section=VALUES(section), description=VALUES(description), owner_id=VALUES(owner_id)`,
+        [
+          course.id,
+          course.name,
+          course.section || null,
+          course.description || null,
+          course.ownerId || null
+        ]
+      );
+    }
+
+    res.send(`✅ Synced ${courses.length} courses into DB`);
+  } catch (err) {
+    console.error("❌ Error syncing courses:", err);
+    res.status(500).send("Error syncing courses");
+  }
+});
+
+// ========================================
+
+// Run server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
