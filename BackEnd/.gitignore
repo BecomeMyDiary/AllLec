@@ -7,5 +7,4 @@ dist/
 build/
 .DS_Store
 *.log
-server_noDB.js
-BackEnd/service-account.json
+service-account.json
