@@ -40,6 +40,8 @@ app.get('/login', (req, res) => {
       'https://www.googleapis.com/auth/classroom.coursework.me', 
       'https://www.googleapis.com/auth/classroom.coursework.students',
       'https://www.googleapis.com/auth/classroom.courseworkmaterials',
+      'https://www.googleapis.com/auth/drive.readonly',
+      'https://www.googleapis.com/auth/drive.metadata.readonly',
       'openid'
     ]
   });
@@ -78,7 +80,7 @@ app.get('/oauth2callback', async (req, res) => {
       [email, tokens.access_token, tokens.refresh_token || null, expiresAt]
     );
     console.log(`✅ Token saved for ${email}`);
-    return res.redirect(`http://localhost:5173/allfile?email=${encodeURIComponent(email)}`);
+    return res.redirect(`http://localhost:5173/classroom?email=${encodeURIComponent(email)}`);
   } catch (err) {
     console.error("❌ Error during OAuth callback:", err.response?.data || err);
     res.status(500).send("Authentication failed");
@@ -236,6 +238,68 @@ app.get('/materials', async (req, res) => {
   }
 });
 
+app.get('/drive/files', async (req, res) => {
+  try {
+    const { email,folderID } = req.query;
+    if (!email) return res.status(400).send("❌ Email is required");
+
+    // ดึง token จาก DB
+    const rows = await db.all("SELECT * FROM user_tokens WHERE email = ?", [email]);
+    if (rows.length === 0) return res.status(400).send("❌ No user tokens found, please login first");
+
+    const user = rows[0];
+    oauth2Client.setCredentials({
+      access_token: user.access_token,
+      refresh_token: user.refresh_token,
+      expiry_date: user.expiry_date
+    });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    // ดึงไฟล์จาก Google Drive
+    const query = folderID ? `'${folderID}' in parents and trashed = false` : 'trashed = false';
+    const result = await drive.files.list({
+      q: query,
+      pageSize: 100,
+      fields: 'files(id, name, mimeType, webViewLink, parents)'
+    });
+    res.json(result.data.files || []);
+  } catch (err) {
+    console.error("❌ Error fetching Drive files:", err.response?.data || err);
+    res.status(500).send("Failed to fetch Drive files");
+  }
+
+});
+
+app.get('/drive/download', async (req, res) => {
+  try {
+    const { email, fileId } = req.query;
+    if (!email || !fileId) return res.status(400).send("❌ Email & fileId are required");
+
+    // ดึง token จาก DB
+    const rows = await db.all("SELECT * FROM user_tokens WHERE email = ?", [email]);
+    if (rows.length === 0) return res.status(400).send("❌ No user tokens found, please login first");
+
+    const user = rows[0];
+    oauth2Client.setCredentials({
+      access_token: user.access_token,
+      refresh_token: user.refresh_token,
+      expiry_date: user.expiry_date
+    });
+    
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+    const file = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    );
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${fileId}"`);
+    file.data.pipe(res);
+  } catch (err) {
+    console.error("❌ Error downloading file:", err.response?.data || err);
+    res.status(500).send("Failed to download file");
+  }
+});
 
 
 // ========================================

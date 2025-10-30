@@ -9,8 +9,12 @@ export const routes = [
                 component: () => import('@/pages/Dashboard.vue'),
             },
             {
-                path: 'allfile',
-                component: () => import('@/pages/AllFile.vue'),
+                path: 'classroom',
+                component: () => import('@/pages/Classroom.vue'),
+            },
+            {
+                path: 'drive',
+                component: () => import('@/pages/Drive.vue'),
             },
         ],
     },

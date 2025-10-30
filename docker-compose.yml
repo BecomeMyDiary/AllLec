@@ -11,7 +11,7 @@ services:
     volumes:
       - ./BackEnd:/app
       - /app/node_modules 
-      - ./BackEnd/sqlite_data:/app/sqlite_data
+      - ./BackEnd/sqlite_data/alllec.db:/app/sqlite_data
     env_file:
       - .env
 

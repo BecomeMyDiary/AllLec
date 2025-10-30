@@ -81,19 +81,21 @@ const logout = () => {
             </v-badge>
         </v-btn>
         <v-btn
-            v-if="email"
-            text
-            @click="logout"
-            >
-            Logout
-            </v-btn>
+          v-if="email"
+          text
+          @click="logout"
+          class="login-logout"
+          >
+          Logout
+          </v-btn>
 
-            <v-btn
-            v-else
-            text
-            to="/login"
-            >
-            Login
+          <v-btn
+          v-else
+          text
+          to="/login"
+          class="login-logout"
+          >
+          Login
         </v-btn>
 
     </v-app-bar>
@@ -105,4 +107,12 @@ const logout = () => {
     font-size: 2rem; 
     font-weight: bold; 
     } 
+
+.login-logout {
+  background: linear-gradient(to right, #FF47D6, #FF78EC, #4564FF, #57E9FF);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-decoration: none;
+}
 </style>
