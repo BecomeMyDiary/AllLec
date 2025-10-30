@@ -1,10 +1,39 @@
 <script setup>
 import { useTheme } from 'vuetify';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router'
 
+import axios from 'axios';
+
+const router = useRouter();
 const theme = useTheme();
 const notificationCount = ref(2);
 const search = ref('');
+const email = ref(null);
+const courses = ref([]);
+const selectedCourse = ref(null);
+
+onMounted(() => {
+  const params = new URLSearchParams(window.location.search);
+  const emailFromQuery = params.get('email');
+  if (emailFromQuery) {
+    email.value = emailFromQuery;
+    localStorage.setItem('user_email', emailFromQuery);
+  } else {
+    const savedEmail = localStorage.getItem('user_email');
+    if (savedEmail) {
+      email.value = savedEmail;
+    }
+  }
+});
+
+const logout = () => {
+  localStorage.removeItem('user_email') // ลบข้อมูลผู้ใช้
+  email.value = null                    // รีเซ็ตค่าในหน้า
+  router.push('/login')                 // กลับไปหน้า login
+}
+
+
 </script>
 
 <template>
@@ -51,7 +80,22 @@ const search = ref('');
             <v-icon>mdi-bell</v-icon>
             </v-badge>
         </v-btn>
-        <v-btn text to="/">About</v-btn>
+        <v-btn
+            v-if="email"
+            text
+            @click="logout"
+            >
+            Logout
+            </v-btn>
+
+            <v-btn
+            v-else
+            text
+            to="/login"
+            >
+            Login
+        </v-btn>
+
     </v-app-bar>
 </template>
 <style scoped> 
